@@ -54,3 +54,8 @@ class ReceiptUploadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ReceiptTextExtractionResponse(BaseModel):
+    receipt_id: int
+    file_path: str
+    raw_text: str

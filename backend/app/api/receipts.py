@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models, schemas
+from app.services.ocr import extract_text_from_image
 
 router = APIRouter()
 
@@ -37,3 +38,22 @@ async def upload_receipt(file: UploadFile = File(...), db: Session = Depends(get
     db.refresh(new_receipt)
 
     return new_receipt
+
+
+@router.get("/receipts/{receipt_id}/extract-text", response_model=schemas.ReceiptTextExtractionResponse)
+def extract_receipt_text(receipt_id: int, db: Session = Depends(get_db)):
+    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if not os.path.exists(receipt.file_path):
+        raise HTTPException(status_code=404, detail="Receipt file not found on disk")
+
+    raw_text = extract_text_from_image(receipt.file_path)
+
+    return {
+        "receipt_id": receipt.id,
+        "file_path": receipt.file_path,
+        "raw_text": raw_text
+    }
