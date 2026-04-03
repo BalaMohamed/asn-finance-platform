@@ -79,18 +79,22 @@ def create_expense_draft(receipt_id: int, db: Session = Depends(get_db)):
     "/receipts/{receipt_id}/create-expense",
     response_model=schemas.ExpenseFromReceiptCreateResponse
 )
-def create_expense_from_receipt(receipt_id: int, db: Session = Depends(get_db)):
+def create_expense_from_receipt(
+    receipt_id: int,
+    expense_data: schemas.ExpenseFromReceiptCreateRequest,
+    db: Session = Depends(get_db)
+):
     receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     new_expense = models.Expense(
-        title="Expense from uploaded receipt",
-        vendor="Unknown Vendor",
-        amount=0.0,
-        category="Uncategorized",
-        expense_date=None,
+        title=expense_data.title,
+        vendor=expense_data.vendor,
+        amount=expense_data.amount,
+        category=expense_data.category,
+        expense_date=expense_data.expense_date,
         receipt_file_path=receipt.file_path,
         receipt_id=receipt.id,
         status="pending"

@@ -81,3 +81,10 @@ class ExpenseFromReceiptCreateResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ExpenseFromReceiptCreateRequest(BaseModel):
+    title: str
+    vendor: str | None = None
+    amount: float
+    category: str | None = None
+    expense_date: date | None = None
