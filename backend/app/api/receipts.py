@@ -120,3 +120,25 @@ def get_receipt(receipt_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     return receipt
+
+@router.delete("/receipts/{receipt_id}")
+def delete_receipt(receipt_id: int, db: Session = Depends(get_db)):
+    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    linked_expense = db.query(models.Expense).filter(models.Expense.receipt_id == receipt_id).first()
+    if linked_expense:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete receipt because it is linked to an expense"
+        )
+
+    if os.path.exists(receipt.file_path):
+        os.remove(receipt.file_path)
+
+    db.delete(receipt)
+    db.commit()
+
+    return {"message": f"Receipt {receipt_id} deleted successfully"}
