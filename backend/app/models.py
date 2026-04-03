@@ -1,5 +1,15 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, func, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+class Receipt(Base):
+    __tablename__ = "receipts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    original_filename = Column(String, nullable=True)
+    file_path = Column(String, nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Expense(Base):
     __tablename__ = "expenses"
