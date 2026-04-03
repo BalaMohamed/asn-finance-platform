@@ -140,3 +140,12 @@ class ExpenseFromReceiptCreateRequest(BaseModel):
             return "Uncategorized"
         value = value.strip()
         return value if value else "Uncategorized"
+    
+class ReceiptResponse(BaseModel):
+    id: int
+    original_filename: str | None = None
+    file_path: str
+    uploaded_at: datetime
+
+    class Config:
+        from_attributes = True
