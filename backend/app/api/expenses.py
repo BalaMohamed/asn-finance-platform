@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app import models, schemas
@@ -38,7 +38,7 @@ def get_expenses(
     vendor: str | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Expense)
+    query = db.query(models.Expense).options(joinedload(models.Expense.receipt))
 
     if status:
         query = query.filter(models.Expense.status == status)
@@ -55,7 +55,12 @@ def get_expenses(
 
 @router.get("/expenses/{expense_id}", response_model=schemas.ExpenseResponse)
 def get_expense(expense_id: int, db: Session = Depends(get_db)):
-    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+    expense = (
+        db.query(models.Expense)
+        .options(joinedload(models.Expense.receipt))
+        .filter(models.Expense.id == expense_id)
+        .first()
+    )
 
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")

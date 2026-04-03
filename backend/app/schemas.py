@@ -73,6 +73,7 @@ class ExpenseResponse(BaseModel):
     receipt_file_path: Optional[str] = None
     receipt_id: Optional[int] = None
     status: ExpenseStatus
+    receipt: ReceiptResponse | None = None
 
     class Config:
         from_attributes = True
