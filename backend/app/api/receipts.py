@@ -57,3 +57,20 @@ def extract_receipt_text(receipt_id: int, db: Session = Depends(get_db)):
         "file_path": receipt.file_path,
         "raw_text": raw_text
     }
+
+@router.post("/receipts/{receipt_id}/create-expense-draft", response_model=schemas.ExpenseDraftResponse)
+def create_expense_draft(receipt_id: int, db: Session = Depends(get_db)):
+    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    # Simulated extraction (for now)
+    return {
+        "title": "New Expense",
+        "vendor": "Unknown Vendor",
+        "amount": None,
+        "category": None,
+        "expense_date": None,
+        "receipt_id": receipt.id
+    }

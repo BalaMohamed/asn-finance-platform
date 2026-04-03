@@ -59,3 +59,11 @@ class ReceiptTextExtractionResponse(BaseModel):
     receipt_id: int
     file_path: str
     raw_text: str
+
+class ExpenseDraftResponse(BaseModel):
+    title: str
+    vendor: str | None = None
+    amount: float | None = None
+    category: str | None = None
+    expense_date: date | None = None
+    receipt_id: int
