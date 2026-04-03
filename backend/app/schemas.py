@@ -67,3 +67,17 @@ class ExpenseDraftResponse(BaseModel):
     category: str | None = None
     expense_date: date | None = None
     receipt_id: int
+
+class ExpenseFromReceiptCreateResponse(BaseModel):
+    id: int
+    title: str
+    vendor: str | None = None
+    amount: float
+    category: str | None = None
+    expense_date: date | None = None
+    receipt_file_path: str | None = None
+    receipt_id: int | None = None
+    status: ExpenseStatus
+
+    class Config:
+        from_attributes = True
