@@ -9,13 +9,19 @@ router = APIRouter()
 
 @router.post("/expenses", response_model=schemas.ExpenseResponse)
 def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)):
+    if expense.receipt_id is not None:
+        receipt = db.query(models.Receipt).filter(models.Receipt.id == expense.receipt_id).first()
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found")
+
     new_expense = models.Expense(
         title=expense.title,
         vendor=expense.vendor,
         amount=expense.amount,
         category=expense.category,
         expense_date=expense.expense_date,
-        receipt_file_path=expense.receipt_file_path
+        receipt_file_path=expense.receipt_file_path,
+        receipt_id=expense.receipt_id
     )
 
     db.add(new_expense)
@@ -64,12 +70,18 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
 
+    if expense_data.receipt_id is not None:
+        receipt = db.query(models.Receipt).filter(models.Receipt.id == expense_data.receipt_id).first()
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found")
+
     expense.title = expense_data.title
     expense.vendor = expense_data.vendor
     expense.amount = expense_data.amount
     expense.category = expense_data.category
     expense.expense_date = expense_data.expense_date
     expense.receipt_file_path = expense_data.receipt_file_path
+    expense.receipt_id = expense_data.receipt_id
     expense.status = expense_data.status
 
     db.commit()

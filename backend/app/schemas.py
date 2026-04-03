@@ -17,6 +17,7 @@ class ExpenseCreate(BaseModel):
     category: Optional[str] = None
     expense_date: Optional[date] = None
     receipt_file_path: Optional[str] = None
+    receipt_id: Optional[int] = None
 
 
 class ExpenseUpdate(BaseModel):
@@ -26,6 +27,7 @@ class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     expense_date: Optional[date] = None
     receipt_file_path: Optional[str] = None
+    receipt_id: Optional[int] = None
     status: ExpenseStatus
 
 
@@ -37,10 +39,12 @@ class ExpenseResponse(BaseModel):
     category: Optional[str] = None
     expense_date: Optional[date] = None
     receipt_file_path: Optional[str] = None
+    receipt_id: Optional[int] = None
     status: ExpenseStatus
 
     class Config:
         from_attributes = True
+
 
 class ReceiptUploadResponse(BaseModel):
     id: int

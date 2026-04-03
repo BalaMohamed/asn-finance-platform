@@ -11,6 +11,9 @@ class Receipt(Base):
     file_path = Column(String, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    expenses = relationship("Expense", back_populates="receipt")
+
+
 class Expense(Base):
     __tablename__ = "expenses"
 
@@ -21,5 +24,8 @@ class Expense(Base):
     category = Column(String, nullable=True)
     expense_date = Column(Date, nullable=True)
     receipt_file_path = Column(String, nullable=True)
+    receipt_id = Column(Integer, ForeignKey("receipts.id"), nullable=True)
     status = Column(String, default="pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    receipt = relationship("Receipt", back_populates="expenses")
