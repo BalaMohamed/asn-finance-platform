@@ -20,10 +20,13 @@ def root():
 @app.post("/expenses", response_model=schemas.ExpenseResponse)
 def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)):
     new_expense = models.Expense(
-        title=expense.title,
-        amount=expense.amount,
-        category=expense.category
-    )
+    title=expense.title,
+    vendor=expense.vendor,
+    amount=expense.amount,
+    category=expense.category,
+    expense_date=expense.expense_date,
+    receipt_file_path=expense.receipt_file_path
+)
 
     db.add(new_expense)
     db.commit()
@@ -59,10 +62,13 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
         raise HTTPException(status_code=404, detail="Expense not found")
 
     expense.title = expense_data.title
+    expense.vendor = expense_data.vendor
     expense.amount = expense_data.amount
     expense.category = expense_data.category
+    expense.expense_date = expense_data.expense_date
+    expense.receipt_file_path = expense_data.receipt_file_path
     expense.status = expense_data.status
-
+    
     db.commit()
     db.refresh(expense)
 
