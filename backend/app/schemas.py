@@ -6,6 +6,12 @@ class ExpenseCreate(BaseModel):
     amount: float
     category: Optional[str] = None
 
+class ExpenseUpdate(BaseModel):
+    title: str
+    amount: float
+    category: Optional[str] = None
+    status: str
+
 class ExpenseResponse(BaseModel):
     id: int
     title: str
