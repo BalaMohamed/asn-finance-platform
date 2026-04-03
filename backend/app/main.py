@@ -37,8 +37,24 @@ def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)
 
 # Get all expenses
 @app.get("/expenses", response_model=list[schemas.ExpenseResponse])
-def get_expenses(db: Session = Depends(get_db)):
-    expenses = db.query(models.Expense).all()
+def get_expenses(
+    status: schemas.ExpenseStatus | None = None,
+    category: str | None = None,
+    vendor: str | None = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.Expense)
+
+    if status:
+        query = query.filter(models.Expense.status == status)
+
+    if category:
+        query = query.filter(models.Expense.category == category)
+
+    if vendor:
+        query = query.filter(models.Expense.vendor == vendor)
+
+    expenses = query.all()
     return expenses
 
 
