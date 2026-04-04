@@ -44,7 +44,6 @@ class ExpenseUpdate(BaseModel):
     expense_date: Optional[date] = None
     receipt_file_path: Optional[str] = None
     receipt_id: Optional[int] = None
-    status: ExpenseStatus
 
     @field_validator("title")
     @classmethod

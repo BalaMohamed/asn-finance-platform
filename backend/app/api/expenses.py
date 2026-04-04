@@ -6,6 +6,26 @@ from app import models, schemas
 
 router = APIRouter()
 
+def get_expense_or_404(expense_id: int, db: Session):
+    expense = (
+        db.query(models.Expense)
+        .options(joinedload(models.Expense.receipt))
+        .filter(models.Expense.id == expense_id)
+        .first()
+    )
+
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    return expense
+
+
+def ensure_pending_status(expense):
+    if expense.status != schemas.ExpenseStatus.pending.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only pending expenses can be approved or rejected. Current status is '{expense.status}'."
+        )
 
 @router.post("/expenses", response_model=schemas.ExpenseResponse)
 def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)):
@@ -87,7 +107,6 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
     expense.expense_date = expense_data.expense_date
     expense.receipt_file_path = expense_data.receipt_file_path
     expense.receipt_id = expense_data.receipt_id
-    expense.status = expense_data.status
 
     db.commit()
     db.refresh(expense)
@@ -106,3 +125,27 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": f"Expense {expense_id} deleted successfully"}
+
+@router.post("/expenses/{expense_id}/approve", response_model=schemas.ExpenseResponse)
+def approve_expense(expense_id: int, db: Session = Depends(get_db)):
+    expense = get_expense_or_404(expense_id, db)
+    ensure_pending_status(expense)
+
+    expense.status = schemas.ExpenseStatus.approved.value
+
+    db.commit()
+    db.refresh(expense)
+
+    return expense
+
+@router.post("/expenses/{expense_id}/reject", response_model=schemas.ExpenseResponse)
+def reject_expense(expense_id: int, db: Session = Depends(get_db)):
+    expense = get_expense_or_404(expense_id, db)
+    ensure_pending_status(expense)
+
+    expense.status = schemas.ExpenseStatus.rejected.value
+
+    db.commit()
+    db.refresh(expense)
+
+    return expense
