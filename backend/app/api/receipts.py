@@ -42,8 +42,15 @@ async def upload_receipt(organization_id: int, file: UploadFile = File(...), db:
 
 
 @router.get("/receipts/{receipt_id}/extract-text", response_model=schemas.ReceiptTextExtractionResponse)
-def extract_receipt_text(receipt_id: int, db: Session = Depends(get_db)):
-    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+def extract_receipt_text(receipt_id: int, organization_id: int, db: Session = Depends(get_db)):
+    receipt = (
+        db.query(models.Receipt)
+        .filter(
+            models.Receipt.id == receipt_id,
+            models.Receipt.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
@@ -59,14 +66,21 @@ def extract_receipt_text(receipt_id: int, db: Session = Depends(get_db)):
         "raw_text": raw_text
     }
 
+
 @router.post("/receipts/{receipt_id}/create-expense-draft", response_model=schemas.ExpenseDraftResponse)
-def create_expense_draft(receipt_id: int, db: Session = Depends(get_db)):
-    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+def create_expense_draft(receipt_id: int, organization_id: int, db: Session = Depends(get_db)):
+    receipt = (
+        db.query(models.Receipt)
+        .filter(
+            models.Receipt.id == receipt_id,
+            models.Receipt.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    # Simulated extraction (for now)
     return {
         "title": "New Expense",
         "vendor": "Unknown Vendor",
@@ -76,6 +90,7 @@ def create_expense_draft(receipt_id: int, db: Session = Depends(get_db)):
         "receipt_id": receipt.id
     }
 
+
 @router.post(
     "/receipts/{receipt_id}/create-expense",
     response_model=schemas.ExpenseFromReceiptCreateResponse
@@ -83,9 +98,17 @@ def create_expense_draft(receipt_id: int, db: Session = Depends(get_db)):
 def create_expense_from_receipt(
     receipt_id: int,
     expense_data: schemas.ExpenseFromReceiptCreateRequest,
+    organization_id: int,
     db: Session = Depends(get_db)
 ):
-    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+    receipt = (
+        db.query(models.Receipt)
+        .filter(
+            models.Receipt.id == receipt_id,
+            models.Receipt.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
@@ -108,29 +131,57 @@ def create_expense_from_receipt(
 
     return new_expense
 
+
 @router.get("/receipts", response_model=list[schemas.ReceiptResponse])
-def get_receipts(db: Session = Depends(get_db)):
-    receipts = db.query(models.Receipt).order_by(models.Receipt.uploaded_at.desc()).all()
+def get_receipts(organization_id: int, db: Session = Depends(get_db)):
+    receipts = (
+        db.query(models.Receipt)
+        .filter(models.Receipt.organization_id == organization_id)
+        .order_by(models.Receipt.uploaded_at.desc())
+        .all()
+    )
     return receipts
 
 
 @router.get("/receipts/{receipt_id}", response_model=schemas.ReceiptResponse)
-def get_receipt(receipt_id: int, db: Session = Depends(get_db)):
-    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+def get_receipt(receipt_id: int, organization_id: int, db: Session = Depends(get_db)):
+    receipt = (
+        db.query(models.Receipt)
+        .filter(
+            models.Receipt.id == receipt_id,
+            models.Receipt.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     return receipt
 
+
 @router.delete("/receipts/{receipt_id}")
-def delete_receipt(receipt_id: int, db: Session = Depends(get_db)):
-    receipt = db.query(models.Receipt).filter(models.Receipt.id == receipt_id).first()
+def delete_receipt(receipt_id: int, organization_id: int, db: Session = Depends(get_db)):
+    receipt = (
+        db.query(models.Receipt)
+        .filter(
+            models.Receipt.id == receipt_id,
+            models.Receipt.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    linked_expense = db.query(models.Expense).filter(models.Expense.receipt_id == receipt_id).first()
+    linked_expense = (
+        db.query(models.Expense)
+        .filter(
+            models.Expense.receipt_id == receipt_id,
+            models.Expense.organization_id == organization_id
+        )
+        .first()
+    )
     if linked_expense:
         raise HTTPException(
             status_code=400,

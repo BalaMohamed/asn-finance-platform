@@ -55,15 +55,20 @@ def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)
 
 @router.get("/expenses", response_model=list[schemas.ExpenseResponse])
 def get_expenses(
+    organization_id: int,
     status: schemas.ExpenseStatus | None = None,
     category: str | None = None,
     vendor: str | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Expense).options(joinedload(models.Expense.receipt))
+    query = (
+        db.query(models.Expense)
+        .options(joinedload(models.Expense.receipt))
+        .filter(models.Expense.organization_id == organization_id)
+    )
 
     if status:
-        query = query.filter(models.Expense.status == status)
+        query = query.filter(models.Expense.status == status.value)
 
     if category:
         query = query.filter(models.Expense.category == category)
@@ -76,11 +81,14 @@ def get_expenses(
 
 
 @router.get("/expenses/{expense_id}", response_model=schemas.ExpenseResponse)
-def get_expense(expense_id: int, db: Session = Depends(get_db)):
+def get_expense(expense_id: int, organization_id: int, db: Session = Depends(get_db)):
     expense = (
         db.query(models.Expense)
         .options(joinedload(models.Expense.receipt))
-        .filter(models.Expense.id == expense_id)
+        .filter(
+            models.Expense.id == expense_id,
+            models.Expense.organization_id == organization_id
+        )
         .first()
     )
 
@@ -91,13 +99,24 @@ def get_expense(expense_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/expenses/{expense_id}", response_model=schemas.ExpenseResponse)
-def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Session = Depends(get_db)):
-    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+def update_expense(
+    expense_id: int,
+    organization_id: int,
+    expense_data: schemas.ExpenseUpdate,
+    db: Session = Depends(get_db)
+):
+    expense = (
+        db.query(models.Expense)
+        .filter(
+            models.Expense.id == expense_id,
+            models.Expense.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
 
-    # block editing if not pending
     if expense.status != schemas.ExpenseStatus.pending.value:
         raise HTTPException(
             status_code=400,
@@ -105,9 +124,16 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
         )
 
     if expense_data.receipt_id is not None:
-        receipt = db.query(models.Receipt).filter(models.Receipt.id == expense_data.receipt_id).first()
+        receipt = (
+            db.query(models.Receipt)
+            .filter(
+                models.Receipt.id == expense_data.receipt_id,
+                models.Receipt.organization_id == organization_id
+            )
+            .first()
+        )
         if not receipt:
-            raise HTTPException(status_code=404, detail="Receipt not found")
+            raise HTTPException(status_code=404, detail="Receipt not found for this organization")
 
     expense.title = expense_data.title
     expense.vendor = expense_data.vendor
@@ -124,8 +150,15 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
 
 
 @router.delete("/expenses/{expense_id}")
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
-    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+def delete_expense(expense_id: int, organization_id: int, db: Session = Depends(get_db)):
+    expense = (
+        db.query(models.Expense)
+        .filter(
+            models.Expense.id == expense_id,
+            models.Expense.organization_id == organization_id
+        )
+        .first()
+    )
 
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
@@ -138,10 +171,23 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
 @router.post("/expenses/{expense_id}/approve", response_model=schemas.ExpenseResponse)
 def approve_expense(
     expense_id: int,
+    organization_id: int,
     decision: schemas.ExpenseDecisionRequest,
     db: Session = Depends(get_db)
 ):
-    expense = get_expense_or_404(expense_id, db)
+    expense = (
+        db.query(models.Expense)
+        .options(joinedload(models.Expense.receipt))
+        .filter(
+            models.Expense.id == expense_id,
+            models.Expense.organization_id == organization_id
+        )
+        .first()
+    )
+
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+
     ensure_pending_status(expense)
 
     expense.status = schemas.ExpenseStatus.approved.value
@@ -156,10 +202,23 @@ def approve_expense(
 @router.post("/expenses/{expense_id}/reject", response_model=schemas.ExpenseResponse)
 def reject_expense(
     expense_id: int,
+    organization_id: int,
     decision: schemas.ExpenseDecisionRequest,
     db: Session = Depends(get_db)
 ):
-    expense = get_expense_or_404(expense_id, db)
+    expense = (
+        db.query(models.Expense)
+        .options(joinedload(models.Expense.receipt))
+        .filter(
+            models.Expense.id == expense_id,
+            models.Expense.organization_id == organization_id
+        )
+        .first()
+    )
+
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+
     ensure_pending_status(expense)
 
     expense.status = schemas.ExpenseStatus.rejected.value
