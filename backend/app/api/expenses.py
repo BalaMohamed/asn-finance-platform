@@ -95,6 +95,13 @@ def update_expense(expense_id: int, expense_data: schemas.ExpenseUpdate, db: Ses
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
 
+    # block editing if not pending
+    if expense.status != schemas.ExpenseStatus.pending.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot edit expense because it is '{expense.status}'. Only pending expenses can be modified."
+        )
+
     if expense_data.receipt_id is not None:
         receipt = db.query(models.Receipt).filter(models.Receipt.id == expense_data.receipt_id).first()
         if not receipt:
