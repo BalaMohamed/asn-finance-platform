@@ -72,6 +72,7 @@ class ExpenseResponse(BaseModel):
     receipt_file_path: Optional[str] = None
     receipt_id: Optional[int] = None
     status: ExpenseStatus
+    decision_note: Optional[str] = None
     receipt: ReceiptResponse | None = None
 
     class Config:
@@ -113,6 +114,7 @@ class ExpenseFromReceiptCreateResponse(BaseModel):
     receipt_file_path: str | None = None
     receipt_id: int | None = None
     status: ExpenseStatus
+    decision_note: str | None = None
 
     class Config:
         from_attributes = True
@@ -149,3 +151,14 @@ class ReceiptResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ExpenseDecisionRequest(BaseModel):
+    note: Optional[str] = None
+
+    @field_validator("note")
+    @classmethod
+    def normalize_note(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        return value if value else None

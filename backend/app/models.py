@@ -26,6 +26,7 @@ class Expense(Base):
     receipt_file_path = Column(String, nullable=True)
     receipt_id = Column(Integer, ForeignKey("receipts.id"), nullable=True)
     status = Column(String, default="pending")
+    decision_note = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     receipt = relationship("Receipt", back_populates="expenses")

@@ -127,23 +127,34 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
     return {"message": f"Expense {expense_id} deleted successfully"}
 
 @router.post("/expenses/{expense_id}/approve", response_model=schemas.ExpenseResponse)
-def approve_expense(expense_id: int, db: Session = Depends(get_db)):
+def approve_expense(
+    expense_id: int,
+    decision: schemas.ExpenseDecisionRequest,
+    db: Session = Depends(get_db)
+):
     expense = get_expense_or_404(expense_id, db)
     ensure_pending_status(expense)
 
     expense.status = schemas.ExpenseStatus.approved.value
+    expense.decision_note = decision.note
 
     db.commit()
     db.refresh(expense)
 
     return expense
 
+
 @router.post("/expenses/{expense_id}/reject", response_model=schemas.ExpenseResponse)
-def reject_expense(expense_id: int, db: Session = Depends(get_db)):
+def reject_expense(
+    expense_id: int,
+    decision: schemas.ExpenseDecisionRequest,
+    db: Session = Depends(get_db)
+):
     expense = get_expense_or_404(expense_id, db)
     ensure_pending_status(expense)
 
     expense.status = schemas.ExpenseStatus.rejected.value
+    expense.decision_note = decision.note
 
     db.commit()
     db.refresh(expense)
