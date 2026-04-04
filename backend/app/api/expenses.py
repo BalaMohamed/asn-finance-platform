@@ -41,7 +41,9 @@ def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)
         category=expense.category,
         expense_date=expense.expense_date,
         receipt_file_path=expense.receipt_file_path,
-        receipt_id=expense.receipt_id
+        receipt_id=expense.receipt_id,
+        organization_id=expense.organization_id
+        
     )
 
     db.add(new_expense)

@@ -9,6 +9,7 @@ class Receipt(Base):
     id = Column(Integer, primary_key=True, index=True)
     original_filename = Column(String, nullable=True)
     file_path = Column(String, nullable=False)
+    organization_id = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
     expenses = relationship("Expense", back_populates="receipt")
@@ -25,6 +26,7 @@ class Expense(Base):
     expense_date = Column(Date, nullable=True)
     receipt_file_path = Column(String, nullable=True)
     receipt_id = Column(Integer, ForeignKey("receipts.id"), nullable=True)
+    organization_id = Column(Integer, nullable=False)
     status = Column(String, default="pending")
     decision_note = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -16,7 +16,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/receipts/upload", response_model=schemas.ReceiptUploadResponse)
-async def upload_receipt(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_receipt(organization_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
@@ -30,7 +30,8 @@ async def upload_receipt(file: UploadFile = File(...), db: Session = Depends(get
 
     new_receipt = models.Receipt(
         original_filename=file.filename,
-        file_path=file_path
+        file_path=file_path,
+        organization_id=organization_id
     )
 
     db.add(new_receipt)
@@ -97,6 +98,7 @@ def create_expense_from_receipt(
         expense_date=expense_data.expense_date,
         receipt_file_path=receipt.file_path,
         receipt_id=receipt.id,
+        organization_id=receipt.organization_id,
         status="pending"
     )
 

@@ -18,6 +18,7 @@ class ExpenseCreate(BaseModel):
     expense_date: Optional[date] = None
     receipt_file_path: Optional[str] = None
     receipt_id: Optional[int] = None
+    organization_id: int
 
     @field_validator("title")
     @classmethod
@@ -74,6 +75,7 @@ class ExpenseResponse(BaseModel):
     status: ExpenseStatus
     decision_note: Optional[str] = None
     receipt: ReceiptResponse | None = None
+    organization_id: int
 
     class Config:
         from_attributes = True
@@ -84,6 +86,7 @@ class ReceiptUploadResponse(BaseModel):
     original_filename: str | None = None
     file_path: str
     uploaded_at: datetime
+    organization_id: int
 
     class Config:
         from_attributes = True
@@ -126,6 +129,7 @@ class ExpenseFromReceiptCreateRequest(BaseModel):
     amount: float = Field(..., gt=0)
     category: str | None = None
     expense_date: date | None = None
+    organization_id: int
 
     @field_validator("title")
     @classmethod
@@ -148,6 +152,7 @@ class ReceiptResponse(BaseModel):
     original_filename: str | None = None
     file_path: str
     uploaded_at: datetime
+    organization_id: int
 
     class Config:
         from_attributes = True
