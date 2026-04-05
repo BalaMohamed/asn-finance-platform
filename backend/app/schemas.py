@@ -63,6 +63,27 @@ class ExpenseUpdate(BaseModel):
         return value if value else "Uncategorized"
 
 
+class OrganizationCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Organization name cannot be empty")
+        return value
+
+
+class OrganizationResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ExpenseResponse(BaseModel):
     id: int
     title: str
