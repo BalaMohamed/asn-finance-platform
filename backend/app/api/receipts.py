@@ -11,6 +11,34 @@ from app.services.ocr import extract_text_from_image
 
 router = APIRouter()
 
+def get_member_or_404(member_id: int, organization_id: int, db: Session):
+    member = (
+        db.query(models.OrganizationMember)
+        .filter(
+            models.OrganizationMember.id == member_id,
+            models.OrganizationMember.organization_id == organization_id
+        )
+        .first()
+    )
+
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in this organization")
+
+    return member
+
+
+def require_finance_access(member_id: int, organization_id: int, db: Session):
+    member = get_member_or_404(member_id, organization_id, db)
+
+    if member.role not in [
+        schemas.MemberRole.president.value,
+        schemas.MemberRole.vp_finance.value,
+        schemas.MemberRole.finance_exec.value,
+    ]:
+        raise HTTPException(status_code=403, detail="You do not have permission to perform this action")
+
+    return member
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

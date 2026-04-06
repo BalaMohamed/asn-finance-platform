@@ -6,6 +6,48 @@ from app import models, schemas
 
 router = APIRouter()
 
+
+def get_member_or_404(member_id: int, organization_id: int, db: Session):
+    member = (
+        db.query(models.OrganizationMember)
+        .filter(
+            models.OrganizationMember.id == member_id,
+            models.OrganizationMember.organization_id == organization_id
+        )
+        .first()
+    )
+
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in this organization")
+
+    return member
+
+
+def require_finance_access(member_id: int, organization_id: int, db: Session):
+    member = get_member_or_404(member_id, organization_id, db)
+
+    if member.role not in [
+        schemas.MemberRole.president.value,
+        schemas.MemberRole.vp_finance.value,
+        schemas.MemberRole.finance_exec.value,
+    ]:
+        raise HTTPException(status_code=403, detail="You do not have permission to perform this action")
+
+    return member
+
+
+def require_approval_access(member_id: int, organization_id: int, db: Session):
+    member = get_member_or_404(member_id, organization_id, db)
+
+    if member.role not in [
+        schemas.MemberRole.president.value,
+        schemas.MemberRole.vp_finance.value,
+    ]:
+        raise HTTPException(status_code=403, detail="You do not have permission to approve or reject expenses")
+
+    return member
+
+
 def get_expense_or_404(expense_id: int, db: Session):
     expense = (
         db.query(models.Expense)
@@ -27,12 +69,20 @@ def ensure_pending_status(expense):
             detail=f"Only pending expenses can be approved or rejected. Current status is '{expense.status}'."
         )
 
+
 @router.post("/expenses", response_model=schemas.ExpenseResponse)
-def create_expense(expense: schemas.ExpenseCreate, db: Session = Depends(get_db)):
+def create_expense(expense: schemas.ExpenseCreate, member_id: int, db: Session = Depends(get_db)):
+    require_finance_access(member_id, expense.organization_id, db)
+
     if expense.receipt_id is not None:
-        receipt = db.query(models.Receipt).filter(models.Receipt.id == expense.receipt_id).first()
+        receipt = (db.query(models.Receipt).filter(
+                models.Receipt.id == expense.receipt_id,
+                models.Receipt.organization_id == expense.organization_id
+            )
+            .first()
+        )
         if not receipt:
-            raise HTTPException(status_code=404, detail="Receipt not found")
+            raise HTTPException(status_code=404, detail="Receipt not found for this organization")
 
     new_expense = models.Expense(
         title=expense.title,
@@ -99,12 +149,10 @@ def get_expense(expense_id: int, organization_id: int, db: Session = Depends(get
 
 
 @router.put("/expenses/{expense_id}", response_model=schemas.ExpenseResponse)
-def update_expense(
-    expense_id: int,
-    organization_id: int,
-    expense_data: schemas.ExpenseUpdate,
-    db: Session = Depends(get_db)
-):
+def update_expense(expense_id: int, organization_id: int, member_id: int, expense_data: schemas.ExpenseUpdate, 
+                   db: Session = Depends(get_db)):
+    require_finance_access(member_id, organization_id, db)
+    
     expense = (
         db.query(models.Expense)
         .filter(
@@ -150,7 +198,9 @@ def update_expense(
 
 
 @router.delete("/expenses/{expense_id}")
-def delete_expense(expense_id: int, organization_id: int, db: Session = Depends(get_db)):
+def delete_expense(expense_id: int, organization_id: int, member_id: int, db: Session = Depends(get_db)):
+    require_finance_access(member_id, organization_id, db)
+    
     expense = (
         db.query(models.Expense)
         .filter(
@@ -168,13 +218,12 @@ def delete_expense(expense_id: int, organization_id: int, db: Session = Depends(
 
     return {"message": f"Expense {expense_id} deleted successfully"}
 
+
 @router.post("/expenses/{expense_id}/approve", response_model=schemas.ExpenseResponse)
-def approve_expense(
-    expense_id: int,
-    organization_id: int,
-    decision: schemas.ExpenseDecisionRequest,
-    db: Session = Depends(get_db)
-):
+def approve_expense(expense_id: int, organization_id: int, member_id: int, decision: schemas.ExpenseDecisionRequest, 
+                db: Session = Depends(get_db)):
+    require_approval_access(member_id, organization_id, db)
+    
     expense = (
         db.query(models.Expense)
         .options(joinedload(models.Expense.receipt))
@@ -200,12 +249,10 @@ def approve_expense(
 
 
 @router.post("/expenses/{expense_id}/reject", response_model=schemas.ExpenseResponse)
-def reject_expense(
-    expense_id: int,
-    organization_id: int,
-    decision: schemas.ExpenseDecisionRequest,
-    db: Session = Depends(get_db)
-):
+def reject_expense(expense_id: int, organization_id: int, member_id: int, decision: schemas.ExpenseDecisionRequest,
+                   db: Session = Depends(get_db)):
+    require_approval_access(member_id, organization_id, db)
+
     expense = (
         db.query(models.Expense)
         .options(joinedload(models.Expense.receipt))
