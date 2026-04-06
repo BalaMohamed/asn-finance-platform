@@ -12,6 +12,19 @@ class Organization(Base):
 
     expenses = relationship("Expense", back_populates="organization")
     receipts = relationship("Receipt", back_populates="organization")
+    members = relationship("OrganizationMember", back_populates="organization")
+
+
+class OrganizationMember(Base):
+    __tablename__ = "organization_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    organization = relationship("Organization", back_populates="members")
 
 
 class Receipt(Base):

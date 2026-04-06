@@ -188,3 +188,24 @@ class ExpenseDecisionRequest(BaseModel):
             return None
         value = value.strip()
         return value if value else None
+
+class MemberRole(str, Enum):
+    president = "president"
+    vp_finance = "vp_finance"
+    finance_exec = "finance_exec"
+
+class OrganizationMemberCreate(BaseModel):
+    name: str = Field(..., min_length=1)
+    role: MemberRole
+    organization_id: int
+
+
+class OrganizationMemberResponse(BaseModel):
+    id: int
+    name: str
+    role: MemberRole
+    organization_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
