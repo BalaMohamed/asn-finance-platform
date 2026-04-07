@@ -44,7 +44,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/receipts/upload", response_model=schemas.ReceiptUploadResponse)
-async def upload_receipt(organization_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_receipt(organization_id: int, member_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    require_finance_access(member_id, organization_id, db)
+
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
@@ -96,7 +98,9 @@ def extract_receipt_text(receipt_id: int, organization_id: int, db: Session = De
 
 
 @router.post("/receipts/{receipt_id}/create-expense-draft", response_model=schemas.ExpenseDraftResponse)
-def create_expense_draft(receipt_id: int, organization_id: int, db: Session = Depends(get_db)):
+def create_expense_draft(receipt_id: int, organization_id: int, member_id: int, db: Session = Depends(get_db)):
+    require_finance_access(member_id, organization_id, db)
+
     receipt = (
         db.query(models.Receipt)
         .filter(
@@ -123,12 +127,10 @@ def create_expense_draft(receipt_id: int, organization_id: int, db: Session = De
     "/receipts/{receipt_id}/create-expense",
     response_model=schemas.ExpenseFromReceiptCreateResponse
 )
-def create_expense_from_receipt(
-    receipt_id: int,
-    expense_data: schemas.ExpenseFromReceiptCreateRequest,
-    organization_id: int,
-    db: Session = Depends(get_db)
-):
+def create_expense_from_receipt(receipt_id: int, expense_data: schemas.ExpenseFromReceiptCreateRequest, organization_id: int,
+                                member_id: int, db: Session = Depends(get_db)):
+    require_finance_access(member_id, organization_id, db)
+    
     receipt = (
         db.query(models.Receipt)
         .filter(
